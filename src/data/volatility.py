@@ -1,4 +1,4 @@
-from data import get_prices 
+from src.data.data import get_prices 
 import numpy as np
 
 
@@ -15,7 +15,6 @@ def daily_vol(tickers, window=21):
     return daily_vol
 
 # Quick test
-
 if __name__ == "__main__":
     print("Running quick test…", flush=True)  # prints immediately
     tickers = ["AAPL", "MSFT", "TSLA"]

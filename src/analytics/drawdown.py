@@ -1,9 +1,6 @@
 import pandas as pd
-import numpy as np
-import math
 
 def drawdown(return_series: pd.Series):
-    
     wealth_index = 1000*(1+return_series).cumprod()
     previous_peaks = wealth_index.cummax()
     drawdowns = (wealth_index-previous_peaks)/previous_peaks

@@ -17,8 +17,7 @@ def skewness(tickers):
     dm = r - r.mean()
     sigma = r.std(ddof=0)
     exp4 = (dm**3).mean()
-    return exp4 / (sigma**3) 
-
+    return exp4 / (sigma**3)
 
 if __name__ == "__main__":
     tickers = ["AAPL", "MSFT", "TSLA"]

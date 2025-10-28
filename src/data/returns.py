@@ -10,9 +10,6 @@ def annual_returns(tickers):
     return annual_rets
 
 # Quick test
-# print(returns("AAPL"), annual_returns("AAPL"))
-
-
 if __name__ == "__main__":
     print("Running quick test…", flush=True)  # prints immediately
     tickers = ["AAPL", "MSFT", "TSLA"]
