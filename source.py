@@ -25,16 +25,9 @@ def get_prices(tickers, start="2000-01-01", end=None):
 def get_risk_free(start="2000-01-01", end=None):
     if end is None:
         end = date.datetime.today()
-
-    rf_3m = yf.download("^IRX", start=start, end=end)["Close"] / 100
-    rf_10y = yf.download("^TNX", start=start, end=end)["Close"] / 100
-
-    risk_free = pd.Series({"RiskFree_3M": rf_3m, "RiskFree_10Y": rf_10y})
-    risk_free = risk_free.dropna()
-    return risk_free
-
-print(get_risk_free().tail)
-
+    rf = yf.download(["^IRX","^TNX"], start=start, end=end)["Close"]
+    rf = rf.rename(columns={"^IRX": "RiskFree_3M", "^TNX": "RiskFree_10Y"}) / 100.0
+    return rf.dropna(how="all")
 
 """
 1. Return functions
@@ -122,6 +115,7 @@ def sharpe_ratio(tickers, rf ):
     sharpe = (er - rf) / vol.iloc[-1]
     return sharpe
 
+
 """if __name__ == "__main__":
     print("Running quick test…", flush=True)  # prints immediately
 
@@ -130,6 +124,11 @@ def sharpe_ratio(tickers, rf ):
     print(cov_matrix.tail(), flush=True)
 
     er = mu(tickers)
-    print("\nmu (tail)")
+    print("\Expected Return (tail)")
     print(er.tail(), flush=True) 
-    """
+
+    #We want the sharpe ratio as of today so we used in this exemple rf 3y as of today
+    sr = sharpe_ratio(tickers, get_risk_free().iloc[-1,0])
+    print("\Sharpe Ratio (tail)")
+    print(sr.tail(), flush=True) 
+"""
