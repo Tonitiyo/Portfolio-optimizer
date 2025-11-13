@@ -88,17 +88,3 @@ def min_variance_portfolio(tickers, short=False, leverage=True, max_weight=1.0):
     
     return weights
 
-# Porfolio calculation for comparison 
-def portfolio_return(tickers, weights):
-    return weights @ src.annual_returns(tickers)
-
-def portfolio_mu(tickers, weights):
-    return weights @ src.mu(tickers)
-
-def portfolio_vol(tickers, weights):
-    return (weights.T @ src.covariance_matrix(tickers) @ weights)**0.5
-
-def sharpe_ratio(tickers, weights): 
-    return (portfolio_mu(tickers, weights) - src.get_risk_free()) / portfolio_vol(tickers, weights)
-
-
