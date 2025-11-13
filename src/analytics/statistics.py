@@ -19,6 +19,7 @@ def skewness(tickers):
     exp4 = (dm**3).mean()
     return exp4 / (sigma**3)
 
+# Quick test
 if __name__ == "__main__":
     tickers = ["AAPL", "MSFT", "TSLA"]
     print(get_prices(tickers))
