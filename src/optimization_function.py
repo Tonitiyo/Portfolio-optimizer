@@ -2,16 +2,20 @@ import source as src
 import pandas as pd 
 import numpy as np 
 from scipy.optimize import minimize
+import matplotlib.pyplot as plt
 
 tickers = ["PE500.PA", "PANX.PA", "RS2K.PA", "DCAM.PA", "PTPXH.PA"]
+
+#Equally weighted
 
 def ew(tickers):
     """Equally weighted portfolio """
     n = len(tickers)
     return pd.Series(np.repeat(1.0 / n, n), index=tickers, name="EW")
 
+#GMV portfolio
 
-def min_variance_portfolio(tickers, short=False, leverage=True, max_weight=1.0):
+def min_variance_portfolio(tickers, short=False, leverage=True, max_weight=1.0, tol=1e-8):
     """
     Calculate weights for a min variance portfolio (GMV = Global Minimum Variance)
 
@@ -71,25 +75,13 @@ def min_variance_portfolio(tickers, short=False, leverage=True, max_weight=1.0):
         options={'ftol': 1e-9, 'maxiter': 1000}
     )
 
-    # Verify convergence
-    if not result.success:
-        error_msg = result.get('message', 'Optimisation failed')
-        raise ValueError(f"The optimisation failed: {error_msg}")
+    w = result.x
+    w = (np.where(np.abs(w) < tol, 0, w)); w = w / w.sum()
+    return pd.Series(w, index=tickers, name="Global minimum variance")
 
-    # Desciption for each parameter
-    if short and leverage:
-        name = "GMV_short_leveraged"
-    elif short and not leverage:
-        name = "GMV_short_no_leverage"
-    else:
-        name = "GMV_long_only"
-    
-    weights = pd.Series(result.x, index=tickers, name=name)
-    
-    return weights
+#Risk parity
 
-
-def risk_parity(tickers, short=False, leverage=False, max_weight=1): 
+def risk_parity(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8): 
     
     n = len(tickers)
     initial_weights = np.repeat(1/n, n)
@@ -109,10 +101,10 @@ def risk_parity(tickers, short=False, leverage=False, max_weight=1):
             return 1e10
         
         # marginal contributions
-        mrc = cov_matrix @ weights / port_vol
+        mrc = cov_matrix @ weights 
         
         # risk contributions
-        rc = weights * mrc
+        rc = (weights * mrc)/port_vol
         
         # target
         target_rc = port_vol / n
@@ -150,60 +142,132 @@ def risk_parity(tickers, short=False, leverage=False, max_weight=1):
         error_msg = result.get('message', 'Optimisation failed')
         raise ValueError(f"L'optimisation a échoué: {error_msg}")
     
-    return result.x
+    w = result.x
+    w = (np.where(np.abs(w) < tol, 0, w)); w = w / w.sum()
 
-print(risk_parity(tickers))
+    return pd.Series(w, index=tickers, name="Risk parity")
+
+"""print(risk_parity(tickers))"""
 
 #MSR 
 
-def msr(tickers, short=False, leverage=False, max_weights=1):
+def msr(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
     n = len(tickers)
     initial_weights = np.repeat(1/n, n)
 
+    # Calculate parameters 
     cov_matrix = src.covariance_matrix(tickers)
+    mu = src.mu(tickers)
+    rf = src.get_risk_free().iloc[-1, 0]
 
-    def objective(cov_matrix):
-
-        #Calculate parameters 
-        port_rets = weights @ src.mu(tickers)
+    def objective(weights):  
+        port_rets = weights @ mu
         port_var = weights.T @ cov_matrix @ weights
         port_vol = np.sqrt(port_var)
-        rf = src.get_risk_free(tickers)
+        
+        if port_vol < 1e-10:
+            return 1e10
+        
+        sharpe = (port_rets - rf) / port_vol
+        return -sharpe  # negative as we use the min function
 
-        #Calculate excess return 
-        excess_rets = port_rets - rf
-        #return sharpe ratio 
-
-        return port_rets / port_vol
-
-    # Constraints : sum = 1
     constraints = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1}]
     
-    # leverage constrains
     if short and not leverage:
         constraints.append({
             'type': 'ineq',
             'fun': lambda w: 1.0 - np.sum(np.abs(w))
         })
     
-    # Bornes
     if short:
         bounds = tuple([(-max_weight, max_weight) for _ in range(n)])
     else:
         bounds = tuple([(0, max_weight) for _ in range(n)])
 
-    result = maximize(
-        fun = objective,
-        args = (cov_matrix,),
-        methods = 'SLSQP'
-        constraints = constraints,
-        bounds = bounds,
+    result = minimize(
+        fun=objective,
+        x0=initial_weights,
+        method='SLSQP',
+        constraints=constraints,
+        bounds=bounds,
         options={'ftol': 1e-9, 'maxiter': 1000}
     )
+    
+    if not result.success:
+        raise ValueError(f"L'optimisation a échoué: {result.message}")
 
-    return result.x
-            
+    w = result.x
+    w = (np.where(np.abs(w) < tol, 0, w)); w = w / w.sum()
+
+    return pd.Series(w, index=tickers, name="Max Sharpe Ratio")
+
+"""print(msr(tickers))"""
+
 #Max decorrelation
 
+def max_decorr(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
+
+    n = len(tickers)
+    initial_weights = np.repeat(1/n, n)
+    corr_matrix = src.correlation_matrix(tickers)
+
+    def objective(weights, corr_matrix):
+        return weights.T @ corr_matrix @ weights
+    
+    # Constrains : sum of weights =1 
+    constraints = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1}]
+    
+    # Leverage constrains if short allowed but no leverage 
+    if short and not leverage:
+        constraints.append({
+            'type': 'ineq',
+            'fun': lambda w: 1.0 - np.sum(np.abs(w))  # gross exposure ≤ 1
+        })
+
+    # Defines limits
+    if short:
+        bounds = tuple([(-max_weight, max_weight) for _ in range(n)])
+    else:
+        bounds = tuple([(0, max_weight) for _ in range(n)])
+
+    result = minimize(
+        fun = objective, 
+        x0 = initial_weights,
+        args = (corr_matrix,),
+        method= 'SLSQP',
+        constraints=constraints,
+        bounds= bounds,
+        options = {'ftol': 1e-9, 'maxiter': 1000}
+    )
+
+    w = result.x
+    w = (np.where(np.abs(w) < tol, 0, w)); w = w / w.sum()
+
+    return pd.Series(w, index=tickers, name="Max decorrelation")
+
+
+"""print(max_decorr(tickers))"""
+
+#Result and comparison
+
+def port_opti_result(tickers, short=False, leverage=False, max_weight=1, tol=1e-8):
+    ew_w   = ew(tickers)
+    gmv_w  = min_variance_portfolio(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
+    rp_w   = risk_parity(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
+    msr_w  = msr(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
+    md_w   = max_decorr(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
+
+    weights = pd.concat([ew_w, gmv_w, rp_w, msr_w, md_w], axis=1).T
+    return weights.round(4)
+
+"""print(port_opti_result(tickers))"""
+
+port_opti_result(tickers).T.plot(kind="bar", figsize=(10,5))
+plt.title("Best allocation per strategy")
+plt.ylabel("Weights")
+plt.grid(True)
+plt.show()
 
 #Black Litterman
+
+
