@@ -236,6 +236,19 @@ def max_div(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
 
     return pd.Series(w, index=tickers, name="Max diversification")
 
+#Inverse volatility 
+
+def inverse_vol(tickers, short=False, leverage=False, max_weight=1, tol=1e-8):
+    cov_matrix = src.covariance_matrix(tickers)
+    vols = np.sqrt(np.diag(cov_matrix)) 
+    inv_vols = 1/ vols
+    weights = inv_vols / inv_vols.sum()
+
+    return pd.Series(weights,
+                     index=tickers,
+                     name="Inverse Volatility")
+
+
 #Result and comparison
 
 def port_opti_result(tickers, short=False, leverage=False, max_weight=1, tol=1e-8):
@@ -245,15 +258,16 @@ def port_opti_result(tickers, short=False, leverage=False, max_weight=1, tol=1e-
     msr_w  = msr(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
     mdcr_w = max_decorr(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
     mdv_w  = max_div(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
-    weights = pd.concat([ew_w, gmv_w, rp_w, msr_w, mdcr_w, mdv_w], axis=1).T
+    inv_w  = inverse_vol(tickers, short=short, leverage=leverage, max_weight=max_weight, tol=tol)
+    weights = pd.concat([ew_w, gmv_w, rp_w, msr_w, mdcr_w, mdv_w, inv_w], axis=1).T
     return weights.round(4)
 
-"""print(port_opti_result(tickers))"""
+print(port_opti_result(tickers))
 
-port_opti_result(tickers).T.plot(kind="bar", figsize=(10,5))
+"""port_opti_result(tickers).T.plot(kind="bar", figsize=(10,5))
 plt.title("Best allocation per strategy")
 plt.ylabel("Weights")
 plt.grid(True)
-plt.show()
+plt.show()"""
 
 #Black Litterman

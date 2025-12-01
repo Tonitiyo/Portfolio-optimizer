@@ -132,3 +132,6 @@ def sharpe_ratio(tickers, rf ):
     print("\Sharpe Ratio (tail)")
     print(sr.tail(), flush=True) 
 """
+
+#Risk aversion 
+"""def get_risk_aversion():"""
