@@ -116,7 +116,7 @@ def sharpe_ratio(tickers, rf ):
     return sharpe
 
 
-"""if __name__ == "__main__":
+if __name__ == "__main__":
     print("Running quick test…", flush=True)  # prints immediately
 
     cov_matrix = covariance_matrix(tickers)
@@ -131,7 +131,7 @@ def sharpe_ratio(tickers, rf ):
     sr = sharpe_ratio(tickers, get_risk_free().iloc[-1,0])
     print("\Sharpe Ratio (tail)")
     print(sr.tail(), flush=True) 
-"""
+
 
 #Risk aversion 
 """def get_risk_aversion():"""
