@@ -1,5 +1,5 @@
-from src.data.returns import returns
-from src.data.data import get_prices
+from src.data import returns
+from src.data import get_prices
 
 def kurtosis(tickers):
     r = returns(tickers)

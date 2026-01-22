@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import norm
-from src.data.returns import daily_returns
+from src.data import daily_returns
 
 #Historical Value at Risk
 def historical_VaR(input, confidence_level=0.95):

@@ -1,4 +1,4 @@
-import source as src
+import data as dt
 import pandas as pd 
 import numpy as np 
 from scipy.optimize import minimize
@@ -45,7 +45,7 @@ def min_variance_portfolio(tickers, short=False, leverage=True, max_weight=1.0, 
     initial_weights = np.repeat(1/n, n)
 
     #Covariance matrix
-    cov_matrix = src.covariance_matrix(tickers).values
+    cov_matrix = dt.covariance_matrix(tickers).values
     
     #Varify if the semi defined matrix is positive
     eigvals = np.linalg.eigvalsh(cov_matrix)
@@ -80,7 +80,7 @@ def risk_parity(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
     n = len(tickers)
     initial_weights = np.repeat(1/n, n)
     
-    cov_matrix = src.covariance_matrix(tickers)
+    cov_matrix = dt.covariance_matrix(tickers)
     
     eigvals = np.linalg.eigvalsh(cov_matrix)
     if np.any(eigvals < -1e-10):
@@ -135,9 +135,9 @@ def msr(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
     initial_weights = np.repeat(1/n, n)
 
     # Calculate parameters 
-    cov_matrix = src.covariance_matrix(tickers)
-    mu = src.mu(tickers)
-    rf = src.get_risk_free().iloc[-1, 0]
+    cov_matrix = dt.covariance_matrix(tickers)
+    mu = dt.mu(tickers)
+    rf = dt.get_risk_free().iloc[-1, 0]
 
     def objective(weights):  
         port_rets = weights @ mu
@@ -178,7 +178,7 @@ def max_decorr(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
 
     n = len(tickers)
     initial_weights = np.repeat(1/n, n)
-    corr_matrix = src.correlation_matrix(tickers)
+    corr_matrix = dt.correlation_matrix(tickers)
 
     def objective(weights, corr_matrix):
         return weights.T @ corr_matrix @ weights
@@ -208,7 +208,7 @@ def max_div(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
 
     n = len(tickers)
     initial_weights = np.repeat(1/n, n)
-    cov_matrix = src.covariance_matrix(tickers)
+    cov_matrix = dt.covariance_matrix(tickers)
     vols = np.sqrt(np.diag(cov_matrix))
 
     def objective(weights, cov_matrix):
@@ -239,7 +239,7 @@ def max_div(tickers, short=False, leverage=False, max_weight=1, tol = 1e-8):
 #Inverse volatility 
 
 def inverse_vol(tickers, short=False, leverage=False, max_weight=1, tol=1e-8):
-    cov_matrix = src.covariance_matrix(tickers)
+    cov_matrix = dt.covariance_matrix(tickers)
     vols = np.sqrt(np.diag(cov_matrix)) 
     inv_vols = 1/ vols
     weights = inv_vols / inv_vols.sum()
