@@ -264,10 +264,51 @@ def port_opti_result(tickers, short=False, leverage=False, max_weight=1, tol=1e-
 
 print(port_opti_result(tickers))
 
+
 """port_opti_result(tickers).T.plot(kind="bar", figsize=(10,5))
 plt.title("Best allocation per strategy")
 plt.ylabel("Weights")
 plt.grid(True)
 plt.show()"""
 
+"""#Efficient frontier 
+aversion_lvls = list(range(1,20))
+result = []
+
+mu = src.mu(tickers)
+cov_matrix = src.covariance_matrix(tickers)
+
+#Constrains 
+constrains = {"type" : eq, "fun" : lambda w:np.sum(w) - 1}
+bounds = [(-1,1)] * len(mu)
+w0 = np.ones(len(mu)) / len(mu)
+
+for aversion_level in aversion_lvls : 
+    
+    def objective(w):
+        port_ret = w @ mu
+        port_var = w @ cov_matrix @ w 
+        return -(port_ret - 0.5 * aversion_level * port_var)
+    
+    opt = minimize(objective, w0, bounds=bounds, constrains=constrains)
+    w_opt = opt.x 
+
+#Stats 
+rets_ann = w_opt * mu
+var_ann = (w_opt.T * cov_matrix * w_opt)
+std_ann = np.sqrt(var_ann)
+
+result.append({
+    "Annual_Return" : rets_ann,
+    "Annual_Var" : var_ann,
+    "Standar_Deviation" : std_ann
+})
+
+df_aversion = pd.DataFrame(result)
+
+#Test 
+print(df_aversion)
+
+
 #Black Litterman
+"""
