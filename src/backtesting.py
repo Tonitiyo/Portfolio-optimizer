@@ -1,11 +1,11 @@
 import pandas as pd
-import source as src
+import data as dt
 import optimization_function as opt
 import matplotlib.pyplot as plt
 
 #Backtesting Version 1
 def backtesting(tickers, model, recalibration="Quarterly"):
-    returns = src.returns(tickers)
+    returns = dt.returns(tickers)
     frequency = {
         "Daily": 1,
         "Weekly": 5,
